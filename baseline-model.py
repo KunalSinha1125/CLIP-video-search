@@ -5,14 +5,24 @@ from PIL import Image
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-image = preprocess(Image.open("cs permutations.png")).unsqueeze(0).to(device)
-text = clip.tokenize(["a diagram", "a dog", "a cat"]).to(device)
+def main():
+    image_name = 'cs permutations.png'
+    text_names = ['a diagram', 'a dog', 'a cat']
+    probs = run_clip(image_name, text_names)
+    print(probs)
 
-with torch.no_grad():
-    image_features = model.encode_image(image)
-    text_features = model.encode_text(text)
+def run_clip(image_name, text_names):
 
-    logits_per_image, logits_per_text = model(image, text)
-    probs = logits_per_image.softmax(dim=-1).cpu().numpy()
+    image = preprocess(Image.open(image_name)).unsqueeze(0).to(device)
+    text = clip.tokenize(text_names).to(device)
 
-print("Label probs:", probs)  # prints: [[0.9927937  0.00421068 0.00299572]]
+    with torch.no_grad():
+        image_features = model.encode_image(image)
+        text_features = model.encode_text(text)
+
+        logits_per_image, logits_per_text = model(image, text)
+        probs = logits_per_image.softmax(dim=-1).cpu().numpy()
+        return probs
+
+if __name__ == "__main__":
+    main()
