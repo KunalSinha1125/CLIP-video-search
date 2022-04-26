@@ -3,12 +3,14 @@ import torch
 import clip
 from PIL import Image
 
+image_dir = 'images/'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
 def main():
     image_inputs = ['diagram.png', 'fish.png']
     text_input = 'fish'
+    image_inputs = [os.path.join(image_dir, img) for img in image_inputs]
     run_clip(image_inputs, text_input)
 
 def run_clip(image_inputs, text_input, top_k=2):
