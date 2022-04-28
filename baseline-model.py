@@ -1,17 +1,38 @@
 import os
 import torch
-import clip
-from PIL import Image
+import clip #pip install clip
+from PIL import Image, ImageSequence
+import cv2 #pip install opencv-python
 
-image_dir = 'images/'
+frame_dir = 'frames/'
+video_dir = 'videos/'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def main():
-    image_inputs = ['diagram.png', 'fish.png']
+def main(video_input):
+    image_inputs = decompose_video(video_input)
     text_input = 'fish'
-    image_inputs = [os.path.join(image_dir, img) for img in image_inputs]
     run_clip(image_inputs, text_input)
+
+def decompose_video(video_input, filetype='png'):
+    video_path = os.path.join(video_dir, video_input)
+    capture = cv2.VideoCapture(video_path)
+    frame_path = os.path.join(frame_dir, video_input)
+    if not os.path.exists(frame_path):
+        os.makedirs(frame_path)
+    frame_number = 0
+    frame_list = []
+    while True:
+        success, frame = capture.read()
+        if success:
+            filename = os.path.join(frame_path, str(frame_number)+'.'+filetype)
+            cv2.imwrite(filename, frame)
+            frame_list.append(filename)
+        else:
+            break
+        frame_number += 1
+    capture.release()
+    return frame_list
 
 def run_clip(image_inputs, text_input, top_k=2):
 
@@ -35,4 +56,5 @@ def run_clip(image_inputs, text_input, top_k=2):
         print(f"{image_inputs[index]:>16s}: {100 * value.item():.2f}%")
 
 if __name__ == "__main__":
-    main()
+    video_input = "beach_sunset.mp4"
+    main(video_input)
