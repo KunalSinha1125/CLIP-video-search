@@ -14,7 +14,7 @@ def main(video_input):
     text_input = 'fish'
     run_clip(image_inputs, text_input)
 
-def decompose_video(video_input, filetype='png'):
+def decompose_video(video_input, filetype='png', skip=15):
     video_path = os.path.join(video_dir, video_input)
     capture = cv2.VideoCapture(video_path)
     frame_path = os.path.join(frame_dir, video_input)
@@ -24,12 +24,13 @@ def decompose_video(video_input, filetype='png'):
     frame_list = []
     while True:
         success, frame = capture.read()
-        if success:
-            filename = os.path.join(frame_path, str(frame_number)+'.'+filetype)
-            cv2.imwrite(filename, frame)
-            frame_list.append(filename)
-        else:
-            break
+        if frame_number % skip == 0:
+            if success:
+                filename = os.path.join(frame_path, str(frame_number)+'.'+filetype)
+                cv2.imwrite(filename, frame)
+                frame_list.append(filename)
+            else:
+                break
         frame_number += 1
     capture.release()
     return frame_list
