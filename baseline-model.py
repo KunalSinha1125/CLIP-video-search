@@ -3,43 +3,43 @@ import torch
 import clip #pip install clip
 from PIL import Image, ImageSequence
 import cv2 #pip install opencv-python
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+
 
 frame_dir = 'frames/'
 video_dir = 'videos/'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def main(video_input, text_input):
+def main(video_input, text_input, top_k, skip):
     frame_path = os.path.join(frame_dir, video_input)
     image_inputs = []
     if not os.path.exists(frame_path):
         print('Saving frames...')
         os.makedirs(frame_path)
-        image_inputs = decompose_video(frame_path, video_input)
-    else:
-        image_inputs = [os.path.join(frame_path, filename)
-            for filename in os.listdir(frame_path)]
-    run_clip(image_inputs, text_input)
+        decompose_video(frame_path, video_input, skip)
+    print("Searching...")
+    image_inputs = [os.path.join(frame_path, filename)
+        for filename in os.listdir(frame_path)]
+    run_clip(image_inputs, text_input, top_k)
 
 def decompose_video(frame_path, video_input, filetype='png', skip=15):
     video_path = os.path.join(video_dir, video_input)
     capture = cv2.VideoCapture(video_path)
     frame_number = 0
-    frame_list = []
     while True:
         success, frame = capture.read()
         if frame_number % skip == 0:
             if success:
                 filename = os.path.join(frame_path, str(frame_number)+'.'+filetype)
                 cv2.imwrite(filename, frame)
-                frame_list.append(filename)
             else:
                 break
         frame_number += 1
     capture.release()
-    return frame_list
+    return
 
-def run_clip(image_inputs, text_input, top_k=2):
+def run_clip(image_inputs, text_input, top_k=5):
 
     images = torch.cat( #Create a tensor representation for the images
         [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
@@ -61,6 +61,16 @@ def run_clip(image_inputs, text_input, top_k=2):
         print(f"{image_inputs[index]:>16s}: {100 * value.item():.2f}%")
 
 if __name__ == "__main__":
-    video_input = "beach_sunset.mp4"
-    text_input = "water"
-    main(video_input, text_input)
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--top_k',
+                        default=5,
+                        help='How many frames to retrieve?')
+    parser.add_argument('--skip',
+                        default=15,
+                        help='How many frames to skip while saving?')
+    args = parser.parse_args()
+    video_input = input("Enter filename of video you'd like to search: ")
+    text_input = input(
+        "Enter brief (few word) description of object you'd like to find: "
+    )
+    main(video_input, text_input, int(args.top_k), int(args.skip))
