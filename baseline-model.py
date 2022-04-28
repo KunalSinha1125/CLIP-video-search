@@ -9,17 +9,21 @@ video_dir = 'videos/'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def main(video_input):
-    image_inputs = decompose_video(video_input)
-    text_input = 'fish'
+def main(video_input, text_input):
+    frame_path = os.path.join(frame_dir, video_input)
+    image_inputs = []
+    if not os.path.exists(frame_path):
+        print('Saving frames...')
+        os.makedirs(frame_path)
+        image_inputs = decompose_video(frame_path, video_input)
+    else:
+        image_inputs = [os.path.join(frame_path, filename)
+            for filename in os.listdir(frame_path)]
     run_clip(image_inputs, text_input)
 
-def decompose_video(video_input, filetype='png', skip=15):
+def decompose_video(frame_path, video_input, filetype='png', skip=15):
     video_path = os.path.join(video_dir, video_input)
     capture = cv2.VideoCapture(video_path)
-    frame_path = os.path.join(frame_dir, video_input)
-    if not os.path.exists(frame_path):
-        os.makedirs(frame_path)
     frame_number = 0
     frame_list = []
     while True:
@@ -58,4 +62,5 @@ def run_clip(image_inputs, text_input, top_k=2):
 
 if __name__ == "__main__":
     video_input = "beach_sunset.mp4"
-    main(video_input)
+    text_input = "water"
+    main(video_input, text_input)
