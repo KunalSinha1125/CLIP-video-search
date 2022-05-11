@@ -24,12 +24,14 @@ def main(video_input, text_input, top_k, skip):
     print("Searching...")
     image_inputs = [os.path.join(frame_path, filename)
         for filename in os.listdir(frame_path)]
-    run_clip(image_inputs, text_input, top_k)
+    image_to_text = {}
+    run_clip(image_to_text,image_inputs, text_input, top_k)
 
 def test(num_examples=5, top_k=1, skip=60):
     if not os.path.isfile(vid2tex_filename):
         dataset_text_parser.export_descriptions()
     all_text = {}
+    image_to_text = {}
     with open(vid2tex_filename) as vid2tex:
         all_text = json.load(vid2tex)
     video_list = os.listdir(video_dir)
@@ -45,13 +47,17 @@ def test(num_examples=5, top_k=1, skip=60):
             os.makedirs(frame_path)
             images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
         for image in images_list:
+            image_to_text[image] = all_text[video_input[:-4]][0]
             all_images.append(image)
+    print(images_list)
     print("Testing...")
+    accur = 0
     for i in range(num_examples):
         text_input = list(all_text.values())[i][0]
-        run_clip(all_images, text_input, top_k)
-
-def run_clip(image_inputs, text_input, top_k=5):
+        
+        accur += run_clip(image_to_text,all_images, text_input, top_k)/num_examples
+    print("accuracy: ", accur)
+def run_clip(image_to_text,image_inputs, text_input, top_k=5):
 
     images = torch.cat( #Create a tensor representation for the images
         [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
@@ -66,11 +72,15 @@ def run_clip(image_inputs, text_input, top_k=5):
     text_features /= text_features.norm(dim=-1, keepdim=True)
     similarity = (100.0 * text_features @ image_features.T).softmax(dim=-1)
     values, indices = similarity[0].topk(top_k)
-
+    
     # Print the result
     print(f"\nTop predictions for {text_input}:\n")
+    score = 0
     for value, index in zip(values, indices):
+        score += int(text_input == image_to_text[image_inputs[index]])
         print(f"{image_inputs[index]:>16s}: {100 * value.item():.2f}%")
+    print(score)
+    return score
 
 if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
