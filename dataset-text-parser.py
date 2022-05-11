@@ -6,6 +6,7 @@ text_dir = "AllVideoDescriptions.txt"
 
 def export_descriptions():
     vid2tex = {}
+    tex2vid = {}
     with open(text_dir) as f:
         lines = f.readlines()
         for line in lines:
@@ -13,8 +14,13 @@ def export_descriptions():
                 continue
             splits = line.split()
             vid_name = splits[0]
+            vid_des = ' '.join(splits[1:])
             if vid_name not in vid2tex.keys():
-                vid2tex[vid_name] = [' '.join(splits[1:])]
+                vid2tex[vid_name] = [vid_des]
             else:
-                vid2tex[vid_name].append(' '.join(splits[1:]))
-    return vid2tex
+                vid2tex[vid_name].append(vid_des)
+            if vid_des not in tex2vid.keys():
+                tex2vid[vid_des] = [vid_name]
+            else:
+                tex2vid[vid_des].append(vid_name)
+    return vid2tex, tex2vid
