@@ -50,11 +50,12 @@ def test(num_examples=5, top_k=1, skip=60):
             all_images.append(image)
     print(images_list)
     print("Testing...")
-    accur = 0
+    total_num_correct = 0
     for i in range(num_examples):
         text_input = list(vid2tex.values())[i][0]
-        accur += run_clip(tex2vid, all_images, text_input, top_k)/num_examples
-    print("accuracy: ", accur)
+        total_num_correct += run_clip(tex2vid, all_images, text_input, top_k)
+    accuracy  = total_num_correct / num_examples
+    print("accuracy: ", accuracy)
 
 def run_clip(tex2vid, image_inputs, text_input, top_k=5):
 
@@ -74,12 +75,13 @@ def run_clip(tex2vid, image_inputs, text_input, top_k=5):
 
     # Print the result
     print(f"\nTop predictions for {text_input}:\n")
-    score = 0
+    num_correct = 0
     for value, index in zip(values, indices):
-        score += int(text_input == tex2vid[image_inputs[index]])
+        video_name = image_inputs[index].split("/")[1]
+        video_name = video_name[:video_name.index(".")]
+        num_correct += int(video_name == tex2vid[text_input][0])
         print(f"{image_inputs[index]:>16s}: {100 * value.item():.2f}%")
-    print(score)
-    return score
+    return num_correct
 
 if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -90,7 +92,7 @@ if __name__ == "__main__":
                         default=15,
                         help='How many frames to skip while saving?')
     args = parser.parse_args()
-    test(num_examples=5, top_k=1, skip=60)
+    test(num_examples=20, top_k=1, skip=60)
     '''
     video_input = input("Enter filename of video you'd like to search: ")
     text_input = input(
