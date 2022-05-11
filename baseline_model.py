@@ -27,7 +27,7 @@ def main(video_input, text_input, top_k, skip):
     run_clip(image_inputs, text_input, top_k)
 
 def test(num_examples=5, top_k=1, skip=60):
-    if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
+    if not os.path.isfile(vid2tex_filename):
         dataset_text_parser.export_descriptions()
     all_text = {}
     with open(vid2tex_filename) as vid2tex:
