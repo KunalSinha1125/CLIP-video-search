@@ -4,11 +4,14 @@ import clip #pip install clip
 from PIL import Image, ImageSequence
 import cv2 #pip install opencv-python
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-
+import dataset_text_parser
+import dataset_processor
+import json
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
 device = "cuda" if torch.cuda.is_available() else "cpu"
+vid2tex_filename = "vid2tex.json"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
 def main(video_input, text_input, top_k, skip):
@@ -24,7 +27,11 @@ def main(video_input, text_input, top_k, skip):
     run_clip(image_inputs, text_input, top_k)
 
 def test(num_examples=5, top_k=1, skip=60):
-    all_text = ["person walking", "person eating"] #TODO: grab these from text file
+    if not os.path.isfile(vid2tex_filename):
+        dataset_text_parser.export_descriptions()
+    all_text = {}
+    with open(vid2tex_filename) as vid2tex:
+        all_text = json.load(vid2tex)
     video_list = os.listdir(video_dir)
     all_images = []
     for i in range(num_examples):
@@ -36,30 +43,13 @@ def test(num_examples=5, top_k=1, skip=60):
         else:
             print(f"Saving frames for video {video_input}")
             os.makedirs(frame_path)
-            images_list = decompose_video(frame_path, video_input, skip)
+            images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
         for image in images_list:
             all_images.append(image)
     print("Testing...")
-    for text_input in all_text:
+    for i in range(num_examples):
+        text_input = list(all_text.values())[i][0]
         run_clip(all_images, text_input, top_k)
-
-def decompose_video(frame_path, video_input, skip, filetype='png'):
-    video_path = os.path.join(video_dir, video_input)
-    capture = cv2.VideoCapture(video_path)
-    frame_number = 0
-    images_list = []
-    while True:
-        success, frame = capture.read()
-        if frame_number % skip == 0:
-            if success:
-                filename = os.path.join(frame_path, str(frame_number)+'.'+filetype)
-                cv2.imwrite(filename, frame)
-                images_list.append(filename)
-            else:
-                break
-        frame_number += 1
-    capture.release()
-    return images_list
 
 def run_clip(image_inputs, text_input, top_k=5):
 
