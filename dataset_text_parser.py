@@ -6,7 +6,8 @@ import json
 
 text_dir = "AllVideoDescriptions.txt"
 
-def export_descriptions(vid2tex_filename):
+def export_descriptions(vid2tex_filename="vid2tex.json",
+                        tex2vid_filename="tex2vid.json"):
     vid2tex = {}
     tex2vid = {}
     with open(text_dir) as f:
@@ -25,7 +26,10 @@ def export_descriptions(vid2tex_filename):
                 tex2vid[vid_des] = [vid_name]
             else:
                 tex2vid[vid_des].append(vid_name)
-    json_file = open(vid2text_filename, "w")
-    json.dump(vid2tex, json_file)
-    json_file.close()
+    vid2tex_file = open(vid2tex_filename, "w")
+    json.dump(vid2tex, vid2tex_file)
+    vid2tex_file.close()
+    tex2vid_file = open(tex2vid_filename, "w")
+    json.dump(tex2vid, vid2tex_file)
+    tex2vid_file.close()
     return vid2tex, tex2vid
