@@ -25,8 +25,8 @@ def main(video_input, text_input, top_k, skip):
     print("Searching...")
     image_inputs = [os.path.join(frame_path, filename)
         for filename in os.listdir(frame_path)]
-    tex2vid = {}
-    run_clip(tex2vid, image_inputs, text_input, top_k)
+    vid2tex, tex2vid = {}, {}
+    run_clip(vid2tex, tex2vid, image_inputs, text_input, top_k)
 
 def test(num_examples=5, top_k=1, skip=60):
     if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
@@ -48,16 +48,15 @@ def test(num_examples=5, top_k=1, skip=60):
             images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
         for image in images_list:
             all_images.append(image)
-    print(images_list)
     print("Testing...")
     total_num_correct = 0
     for i in range(num_examples):
         text_input = list(vid2tex.values())[i][0]
-        total_num_correct += run_clip(tex2vid, all_images, text_input, top_k)
+        total_num_correct += run_clip(vid2tex, tex2vid, all_images, text_input, top_k)
     accuracy  = total_num_correct / num_examples
-    print("accuracy: ", accuracy)
+    print(f"\nOverall Accuracy: {accuracy}")
 
-def run_clip(tex2vid, image_inputs, text_input, top_k=5):
+def run_clip(vid2tex, tex2vid, image_inputs, text_input, top_k=5):
 
     images = torch.cat( #Create a tensor representation for the images
         [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
@@ -74,13 +73,15 @@ def run_clip(tex2vid, image_inputs, text_input, top_k=5):
     values, indices = similarity[0].topk(top_k)
 
     # Print the result
-    print(f"\nTop predictions for {text_input}:\n")
+    print(f"\nUser input: {text_input}:")
     num_correct = 0
     for value, index in zip(values, indices):
         video_name = image_inputs[index].split("/")[1]
         video_name = video_name[:video_name.index(".")]
         num_correct += int(video_name == tex2vid[text_input][0])
-        print(f"{image_inputs[index]:>16s}: {100 * value.item():.2f}%")
+        print(f"Model prediction: video {video_name}. Depicts: {vid2tex[video_name][0]}")
+        print(f"Frame: {image_inputs[index]:>16s}")
+        print(f"Probability: {100 * value.item():.2f}%")
     return num_correct
 
 if __name__ == "__main__":
