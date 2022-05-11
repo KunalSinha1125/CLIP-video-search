@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         default=15,
                         help='How many frames to skip while saving?')
     args = parser.parse_args()
-    test(num_examples=5, top_k=1, skip=60)
+    test(num_examples=20, top_k=1, skip=60)
     '''
     video_input = input("Enter filename of video you'd like to search: ")
     text_input = input(
