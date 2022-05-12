@@ -7,6 +7,8 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import dataset_text_parser
 import dataset_processor
 import json
+from time import sleep
+from progress.bar import Bar #pip install progress
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
@@ -48,11 +50,12 @@ def test(num_examples=5, top_k=1, skip=60):
             images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
         for image in images_list:
             all_images.append(image)
-    print("Testing...")
     total_num_correct = 0
-    for i in range(num_examples):
-        text_input = list(vid2tex.values())[i][0]
-        total_num_correct += run_clip(vid2tex, tex2vid, all_images, text_input, top_k)
+    with Bar('Testing examples...') as bar:
+        for i in range(num_examples):
+            text_input = list(vid2tex.values())[i][0]
+            total_num_correct += run_clip(vid2tex, tex2vid, all_images, text_input, top_k)
+            bar.next()
     accuracy  = total_num_correct / num_examples
     print(f"\nOverall Accuracy: {accuracy}")
 
@@ -96,7 +99,7 @@ if __name__ == "__main__":
                         default=15,
                         help='How many frames to skip while saving?')
     args = parser.parse_args()
-    test(args.num_examples, args.top_k, args.skip)
+    test(int(args.num_examples), int(args.top_k), int(args.skip))
     '''
     video_input = input("Enter filename of video you'd like to search: ")
     text_input = input(
