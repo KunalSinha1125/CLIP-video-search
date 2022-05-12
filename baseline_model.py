@@ -86,14 +86,17 @@ def run_clip(vid2tex, tex2vid, image_inputs, text_input, top_k=5):
 
 if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--num_examples',
+                        default=20,
+                        help='How many examples to test on?')
     parser.add_argument('--top_k',
-                        default=5,
+                        default=1,
                         help='How many frames to retrieve?')
     parser.add_argument('--skip',
                         default=15,
                         help='How many frames to skip while saving?')
     args = parser.parse_args()
-    test(num_examples=20, top_k=1, skip=60)
+    test(args.num_examples, args.top_k, args.skip)
     '''
     video_input = input("Enter filename of video you'd like to search: ")
     text_input = input(
