@@ -37,7 +37,7 @@ def test(num_examples=5, top_k=1, skip=60):
         vid2tex = json.load(f1)
         tex2vid = json.load(f2)
     video_list = os.listdir(video_dir)
-    all_images = []
+    image_inputs = []
     for i in range(num_examples):
         video_input = video_list[i]
         frame_path = os.path.join(frame_dir, video_input)
@@ -49,32 +49,42 @@ def test(num_examples=5, top_k=1, skip=60):
             os.makedirs(frame_path)
             images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
         for image in images_list:
-            all_images.append(image)
+            image_inputs.append(image)
+    image_features = get_image_embeddings(image_inputs)
     total_num_correct = 0
     with Bar('Testing examples...') as bar:
-        for i in range(num_examples):
+        for i in range(num_examples): #TODO: VECTORIZE THIS
             text_input = list(vid2tex.values())[i][0]
-            total_num_correct += run_clip(vid2tex, tex2vid, all_images, text_input, top_k)
+            text_features = get_text_embedding(text_input)
+            total_num_correct += run_clip(
+                vid2tex, tex2vid, image_inputs, text_input,
+                image_features, text_features, top_k
+            )
             bar.next()
     accuracy  = total_num_correct / num_examples
     print(f"\nOverall Accuracy: {accuracy}")
 
-def run_clip(vid2tex, tex2vid, image_inputs, text_input, top_k=5):
-
+def get_image_embeddings(image_inputs):
     images = torch.cat( #Create a tensor representation for the images
         [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
     ).to(device)
-    text = clip.tokenize(text_input).to(device) #Create a tensor representation for the text
     with torch.no_grad():
         image_features = model.encode_image(images) #Produce image embeddings
-        text_features = model.encode_text(text) #Produce text embeddings
+    return image_features
 
+def get_text_embedding(text_input):
+    text = clip.tokenize(text_input).to(device) #Create a tensor representation for the text
+    with torch.no_grad():
+        text_features = model.encode_text(text) #Produce text embeddings
+    return text_features
+
+def run_clip(vid2tex, tex2vid, image_inputs, text_input,
+                image_features, text_features, top_k=5):
     # Pick the top 5 most similar labels for the image
     image_features /= image_features.norm(dim=-1, keepdim=True)
     text_features /= text_features.norm(dim=-1, keepdim=True)
     similarity = (100.0 * text_features @ image_features.T).softmax(dim=-1)
     values, indices = similarity[0].topk(top_k)
-
     # Print the result
     print(f"\nUser input: {text_input}:")
     num_correct = 0
