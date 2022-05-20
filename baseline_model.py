@@ -9,6 +9,7 @@ import dataset_processor
 import json
 from time import sleep
 from progress.bar import Bar #pip install progress
+import keyframe
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
@@ -44,7 +45,8 @@ def get_images(num_examples=5, skip=15):
         else:
             print(f"Saving frames for video {video_input}")
             os.makedirs(frame_path)
-            images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
+            #images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
+            images_list = keyframe.decompose_video1(frame_path, video_input)
         for image in images_list:
             image_inputs.append(image)
     return image_inputs
