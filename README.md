@@ -4,3 +4,4 @@ We are using CLIP for Ad Hoc Video Search! Enter in the name of some object, and
 Sources consulted:
 run_clip(): https://github.com/openai/CLIP
 decompose_video(): https://techtutorialsx.com/2021/04/29/python-opencv-splitting-video-frames/
+fine_tune.py: https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
