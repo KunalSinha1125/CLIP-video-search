@@ -73,6 +73,7 @@ def analyze_results(similarity, num_examples, image_inputs, text_inputs, vid2tex
         pred = image_inputs[int(index)]
         pred = pred[pred.index("/")+1 : pred.index(".")]
         accuracy += (pred == actual[0])
+        print(f"\nText input: {text_inputs[i]}")
         print(f"Model prediction: video {pred}. Depicts: {vid2tex[pred][0]}")
         print(f"Frame: {image_inputs[index]:>16s}")
         print(f"Probability: {value.item():.2f}%")
