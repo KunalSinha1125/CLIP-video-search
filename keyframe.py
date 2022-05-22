@@ -70,6 +70,7 @@ def decompose_video1(frame_path, video_input, filetype='png'):
     A = csc_matrix(final_arr, dtype=float)
 
     #top 63 singular values from 76082 to 508
+    print('A size:', A.shape)
     u, s, vt = svds(A, k = 63)
 
     v1_t = vt.transpose()
