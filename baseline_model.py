@@ -10,7 +10,6 @@ import json
 from time import sleep
 from progress.bar import Bar #pip install progress
 import keyframe
-from data import get_dictionaries
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
@@ -24,6 +23,15 @@ def main(num_examples, top_k, skip, save, model_type):
     similarity = compute_similarity(image_inputs, text_inputs)
     analyze_results(similarity, num_examples, image_inputs,
                     text_inputs, vid2tex, tex2vid, top_k)
+
+def get_dictionaries(vid2tex_filename="vid2tex.json",
+                    tex2vid_filename="tex2vid.json"):
+    if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
+        dataset_text_parser.export_descriptions()
+    with open(vid2tex_filename) as f1, open(tex2vid_filename) as f2:
+        vid2tex = json.load(f1)
+        tex2vid = json.load(f2)
+    return vid2tex, tex2vid
 
 def get_images(num_examples=5, skip=15, save=True, model_type="baseline"):
     video_list = os.listdir(video_dir)
