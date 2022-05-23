@@ -10,30 +10,50 @@ import json
 from time import sleep
 from progress.bar import Bar #pip install progress
 import keyframe
-from baseline_model import frame_dir, video_dir
+from tqdm import tqdm #pip install tqdm
+import numpy as np
 
-def get_images(num_examples=5, skip=15, save=True, model_type="baseline"):
-    video_list = os.listdir(video_dir)
-    image_inputs = []
-    for i in range(num_examples):
-        video_input = video_list[i]
-        frame_path = os.path.join(frame_dir, video_input)
+class Dataset():
+    def __init__(self, vid_dir = "YouTubeClips/", img_dir="all_frames/",
+                 num_examples=5, scale=255, resolution=128, skip=15, save=True):
+        vid2tex, tex2vid = get_dictionaries()
         if save:
-            if os.path.exists(frame_path):
-                print(f"Deleting old frames saved in {video_input}")
-                for root, dirs, old_files in os.walk(frame_path):
-                    for old in old_files:
-                        os.remove(os.path.join(root, old))
-            else:
-                os.makedirs(frame_path)
-            print(f"Saving new frames for video {video_input}")
-            if model_type == "baseline":
-                images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
-            elif model_type == "keyframe":
-                images_list = keyframe.decompose_video1(frame_path, video_input)
-        else: #os.path.exists(frame_path):
-            images_list = [os.path.join(frame_path, image)
-                for image in os.listdir(frame_path)]
-        for image in images_list:
-            image_inputs.append(image)
-    return image_inputs
+            breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
+        num_imgs = len(os.listdir(img_dir))
+        img_matrix = np.zeros((num_imgs, resolution, resolution, 3))
+        img_names = [os.path.join(img_dir, name) for name in os.listdir(img_dir)]
+        print("Preprocessing images...")
+        for i in tqdm(range(num_imgs)):
+            img_matrix[i] = cv2.resize(cv2.imread(img_names[i]), (resolution, resolution))
+
+def get_dictionaries(vid2tex_filename="vid2tex.json",
+                    tex2vid_filename="tex2vid.json"):
+    if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
+        dataset_text_parser.export_descriptions()
+    with open(vid2tex_filename) as f1, open(tex2vid_filename) as f2:
+        vid2tex = json.load(f1)
+        tex2vid = json.load(f2)
+    return vid2tex, tex2vid
+
+def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip,
+                    vid_type=".avi", img_type=".png"):
+    if not os.path.exists(img_dir):
+        os.mkdir(img_dir)
+    for vid, tex in list(vid2tex.items())[:num_examples]:
+        vid_path = os.path.join(vid_dir, vid + vid_type)
+        capture = cv2.VideoCapture(vid_path)
+        frame_num = 0
+        while True:
+            success, frame = capture.read()
+            if frame_num % skip == 0:
+                if success:
+                    filename = os.path.join(
+                        img_dir, tex[0] + "_" + str(frame_num) + img_type
+                    )
+                    if os.path.exists(filename):
+                        os.remove(filename)
+                    cv2.imwrite(filename, frame)
+                else:
+                    break
+            frame_num += 1
+    capture.release()
