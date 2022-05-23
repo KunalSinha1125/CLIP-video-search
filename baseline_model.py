@@ -10,6 +10,7 @@ import json
 from time import sleep
 from progress.bar import Bar #pip install progress
 import keyframe
+import data
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
@@ -18,7 +19,7 @@ model, preprocess = clip.load("ViT-B/32", device=device)
 
 def main(num_examples, top_k, skip, save, model_type):
     vid2tex, tex2vid = get_dictionaries()
-    image_inputs = get_images(num_examples, skip, save, model_type)
+    image_inputs = data.get_images(num_examples, skip, save, model_type)
     text_inputs = get_texts(num_examples, vid2tex)
     similarity = compute_similarity(image_inputs, text_inputs)
     analyze_results(similarity, num_examples, image_inputs,
@@ -32,32 +33,6 @@ def get_dictionaries(vid2tex_filename="vid2tex.json",
         vid2tex = json.load(f1)
         tex2vid = json.load(f2)
     return vid2tex, tex2vid
-
-def get_images(num_examples=5, skip=15, save=True, model_type="baseline"):
-    video_list = os.listdir(video_dir)
-    image_inputs = []
-    for i in range(num_examples):
-        video_input = video_list[i]
-        frame_path = os.path.join(frame_dir, video_input)
-        if save:
-            if os.path.exists(frame_path):
-                print(f"Deleting old frames saved in {video_input}")
-                for root, dirs, old_files in os.walk(frame_path):
-                    for old in old_files:
-                        os.remove(os.path.join(root, old))
-            else:
-                os.makedirs(frame_path)
-            print(f"Saving new frames for video {video_input}")
-            if model_type == "baseline":
-                images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
-            elif model_type == "keyframe":
-                images_list = keyframe.decompose_video1(frame_path, video_input)
-        else: #os.path.exists(frame_path):
-            images_list = [os.path.join(frame_path, image)
-                for image in os.listdir(frame_path)]
-        for image in images_list:
-            image_inputs.append(image)
-    return image_inputs
 
 def get_texts(num_examples, vid2tex):
     text_inputs = [desc[0] for desc in vid2tex.values()]
