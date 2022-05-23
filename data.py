@@ -16,7 +16,7 @@ from baseline_model import model, preprocess, device, get_dictionaries
 
 class Dataset():
     def __init__(self, vid_dir = "YouTubeClips/", img_dir="all_frames/",
-                 num_examples=5, skip=15, save=True):
+                 num_examples=20, skip=15, save=True):
         vid2tex, tex2vid = get_dictionaries()
         if save:
             breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
@@ -30,6 +30,12 @@ class Dataset():
             [clip.tokenize(input) for input in text_descriptions]
         ).to(device)
         '''
+        self.labels = torch.zeros((len(self)), dtype=torch.long)
+        for i in range(len(self)):
+            vid = image_names[i].split("_")[0]
+            self.labels[i] = (text_descriptions.index(vid))
+        '''
+        '''
         num_imgs = len(os.listdir(img_dir))
         img_matrix = np.zeros((num_imgs, resolution, resolution, 3))
         img_names = [os.path.join(img_dir, name) for name in os.listdir(img_dir)]
@@ -38,7 +44,7 @@ class Dataset():
             img_matrix[i] = cv2.resize(cv2.imread(img_names[i]), (resolution, resolution))
         '''
     def __getitem__(self, idx):
-        return self.images[idx], self.texts[idx]
+        return self.images[idx], self.texts[idx]#, self.labels[idx]
 
     def __len__(self):
         return self.images.shape[0]

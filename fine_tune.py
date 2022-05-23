@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
+from torch.utils.data import DataLoader
 import torch.backends.cudnn as cudnn
 import numpy as np
 import torchvision
@@ -10,13 +11,17 @@ from torchvision import datasets, models, transforms
 import time
 import os
 import copy
+from data import Dataset
+from baseline_model import model, preprocess, device
+from tqdm import tqdm #pip install tqdm
 
 #Fine-tune the model
-def run_finetuning(model_type="ViT-B/32", device="cpu", loss_fn="cross_entropy",
-                   lr=0.001, momentum=0.9, num_epochs=25, print_arch=False):
+def run_finetuning(model="ViT-B/32", device="cpu", loss_fn="mse_loss",
+                   lr=0.001, momentum=0.9, num_epochs=1, print_arch=False,
+                   batch_size=64, shuffle=True):
 
     #Load the model
-    model, preprocess = clip.load(model_type, device=device)
+    model, preprocess = clip.load(model, device=device)
 
     #Freeze the old layers
     for param in model.parameters():
@@ -42,39 +47,48 @@ def run_finetuning(model_type="ViT-B/32", device="cpu", loss_fn="cross_entropy",
         describe_architecture(model)
 
     #Run training
+    dataloaders = load_dataset(batch_size, shuffle)
     criterion = None
-    if loss_fn == "cross_entropy":
-        criterion = nn.CrossEntropyLoss()
+    if loss_fn == "mse_loss":
+        criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
-    trained_model = train_model(model, criterion, optimizer, num_epochs)
-
+    trained_model = train_model(
+        model, dataloaders, criterion, optimizer, num_epochs
+    )
     return trained_model
 
+def load_dataset(batch_size, shuffle):
+    train_dataset = Dataset()
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=shuffle
+    )
+    return {"train": train_loader}
 
-def train_model(model, criterion, optimizer, num_epochs):
+def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0
+    best_loss = float('inf')#best_acc = 0.0
 
-    for epoch in range(num_epochs):
-        print(f'Epoch {epoch}/{num_epochs - 1}')
-        print('-' * 10)
+    for epoch in tqdm(range(num_epochs), desc="Epoch:"):
+        #print(f'Epoch {epoch}/{num_epochs - 1}')
+        #print('-' * 10)
 
         # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
+        for phase in ['train']:
             if phase == 'train':
                 model.train()  # Set model to training mode
             else:
                 model.eval()   # Set model to evaluate mode
 
             running_loss = 0.0
-            running_corrects = 0
+            #running_corrects = 0
 
             # Iterate over data.
-            for inputs, labels in dataloaders[phase]:
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+            num_examples = 0
+            for i, (images, texts) in enumerate(dataloaders[phase]):
+                images = images.to(device)
+                texts = texts.to(device)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -82,36 +96,41 @@ def train_model(model, criterion, optimizer, num_epochs):
                 # forward
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
+                    outputs = model(images, texts)[0]
                     _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+                    pred_embeds = torch.column_stack([texts[p] for p in preds]).to(torch.float)
+                    pred_embeds = torch.t(pred_embeds)
+                    loss = criterion(pred_embeds, texts.to(torch.float))
+                    #loss = criterion(outputs, labels)
 
                     # backward + optimize only if in training phase
                     if phase == 'train':
+                        loss.requires_grad = True
                         loss.backward()
                         optimizer.step()
 
                 # statistics
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-            if phase == 'train':
-                scheduler.step()
+                num_examples += 1
+                running_loss += loss.item() * images.size(0)
+                #running_corrects += torch.sum(pred_embeds == texts.data)
+            #if phase == 'train':
+                #scheduler.step()
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            epoch_loss = running_loss / num_examples#dataset_sizes[phase]
+            #epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-            print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            print(f'{phase} Loss: {epoch_loss:.4f}') #Acc: {epoch_acc:.4f}')
 
             # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
-                best_acc = epoch_acc
+            if epoch_loss < best_loss#phase == 'val' and epoch_acc > best_acc:
+                best_loss = epoch_loss#best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
         print()
 
     time_elapsed = time.time() - since
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
-    print(f'Best val Acc: {best_acc:4f}')
+    #print(f'Best val Acc: {best_acc:4f}')
 
     # load best model weights
     model.load_state_dict(best_model_wts)
@@ -129,5 +148,4 @@ def describe_architecture(model):
         child_counter += 1
 
 if __name__ == "__main__":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    run_finetuning(device=device)
+    run_finetuning()
