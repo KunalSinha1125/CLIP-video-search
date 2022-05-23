@@ -12,7 +12,9 @@ from progress.bar import Bar #pip install progress
 import keyframe
 from tqdm import tqdm #pip install tqdm
 import numpy as np
-from baseline_model import model, preprocess, device, get_dictionaries
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, preprocess = clip.load("ViT-B/32", device=device)
 
 class Dataset():
     def __init__(self, vid_dir = "YouTubeClips/", img_dir="all_frames/",
@@ -48,6 +50,15 @@ class Dataset():
 
     def __len__(self):
         return self.images.shape[0]
+
+def get_dictionaries(vid2tex_filename="vid2tex.json",
+                    tex2vid_filename="tex2vid.json"):
+    if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
+        dataset_text_parser.export_descriptions()
+    with open(vid2tex_filename) as f1, open(tex2vid_filename) as f2:
+        vid2tex = json.load(f1)
+        tex2vid = json.load(f2)
+    return vid2tex, tex2vid
 
 def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip,
                     vid_type=".avi", img_type=".png"):

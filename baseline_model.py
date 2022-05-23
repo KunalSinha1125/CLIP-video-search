@@ -10,30 +10,26 @@ import json
 from time import sleep
 from progress.bar import Bar #pip install progress
 import keyframe
+import fine_tune
+from data import get_dictionaries
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = clip.load("ViT-B/32", device=device)
 
-def main(num_examples, top_k, skip, save, model_type):
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+def main(num_examples, top_k, skip, save, frame_type, model_type):
+    model, preprocess = clip.load("ViT-B/32", device=device)
+    if model_type == "finetuned":
+        model = fine_tune.load()
     vid2tex, tex2vid = get_dictionaries()
-    image_inputs = get_images(num_examples, skip, save, model_type)
+    image_inputs = get_images(num_examples, skip, save, frame_type)
     text_inputs = get_texts(num_examples, vid2tex)
-    similarity = compute_similarity(image_inputs, text_inputs)
+    similarity = compute_similarity(model, preprocess, image_inputs, text_inputs)
     analyze_results(similarity, num_examples, image_inputs,
                     text_inputs, vid2tex, tex2vid, top_k)
 
-def get_dictionaries(vid2tex_filename="vid2tex.json",
-                    tex2vid_filename="tex2vid.json"):
-    if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
-        dataset_text_parser.export_descriptions()
-    with open(vid2tex_filename) as f1, open(tex2vid_filename) as f2:
-        vid2tex = json.load(f1)
-        tex2vid = json.load(f2)
-    return vid2tex, tex2vid
-
-def get_images(num_examples=5, skip=15, save=True, model_type="baseline"):
+def get_images(num_examples, skip, save, frame_type):
     video_list = os.listdir(video_dir)
     image_inputs = []
     for i in range(num_examples):
@@ -48,9 +44,9 @@ def get_images(num_examples=5, skip=15, save=True, model_type="baseline"):
             else:
                 os.makedirs(frame_path)
             print(f"Saving new frames for video {video_input}")
-            if model_type == "baseline":
+            if frame_type == "baseline":
                 images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
-            elif model_type == "keyframe":
+            elif frame_type == "keyframe":
                 images_list = keyframe.decompose_video1(frame_path, video_input)
         else: #os.path.exists(frame_path):
             images_list = [os.path.join(frame_path, image)
@@ -63,7 +59,7 @@ def get_texts(num_examples, vid2tex):
     text_inputs = [desc[0] for desc in vid2tex.values()]
     return text_inputs[:num_examples]
 
-def compute_similarity(image_inputs, text_inputs):
+def compute_similarity(model, preprocess, image_inputs, text_inputs):
     images = torch.cat( #Create a tensor representation for the images
         [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
     ).to(device)
@@ -101,14 +97,18 @@ if __name__ == "__main__":
                         help='How many frames to skip while saving?')
     parser.add_argument('--save',
                         action='store_true',
-                        default=True,
                         help='Specify whether to re-save the frames')
-    parser.add_argument('--model_type',
-                        default='keyframe',
+    parser.add_argument('--frame_type',
+                        default='baseline',
                         choices=['baseline', 'keyframe'],
-                        help='Specify whether to re-save the frames')
+                        help='Specify how to save the frames')
+    parser.add_argument('--model_type',
+                        default='finetuned',
+                        choices=['baseline', 'finetuned'],
+                        help='Specify which model to use')
     args = parser.parse_args()
-    main(int(args.num_examples), int(args.top_k), int(args.skip), args.save, args.model_type)
+    main(int(args.num_examples), int(args.top_k), int(args.skip), args.save,
+         args.frame_type, args.model_type)
 
 
 '''

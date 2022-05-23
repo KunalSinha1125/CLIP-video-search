@@ -12,19 +12,21 @@ import time
 import os
 import copy
 from data import Dataset
-from baseline_model import model, preprocess, device
 from tqdm import tqdm #pip install tqdm
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 #Fine-tune the model
-def run_finetuning(model="ViT-B/32", device="cpu", loss_fn="mse_loss",
-                   lr=0.001, momentum=0.9, num_epochs=1, print_arch=False,
-                   batch_size=64, shuffle=True):
+def run_finetuning(model="ViT-B/32", folder='models', filename="finetuned.pt", loss_fn="mse_loss",
+                   lr=0.001, momentum=0.9, num_epochs=3, print_arch=False,
+                   batch_size=64, shuffle=True, freeze=.75):
 
     #Load the model
     model, preprocess = clip.load(model, device=device)
 
     #Freeze the old layers
-    for param in model.parameters():
+    num_freeze = int(len(list(model.parameters())) * freeze)
+    for param in list(model.parameters())[:num_freeze]:
         param.requires_grad = False
 
     #For the visual and text transformer,
@@ -53,7 +55,7 @@ def run_finetuning(model="ViT-B/32", device="cpu", loss_fn="mse_loss",
         criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     trained_model = train_model(
-        model, dataloaders, criterion, optimizer, num_epochs
+        model, filename, dataloaders, criterion, optimizer, num_epochs
     )
     return trained_model
 
@@ -64,7 +66,7 @@ def load_dataset(batch_size, shuffle):
     )
     return {"train": train_loader}
 
-def train_model(model, dataloaders, criterion, optimizer, num_epochs):
+def train_model(model, filename, dataloaders, criterion, optimizer, num_epochs):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -122,7 +124,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             print(f'{phase} Loss: {epoch_loss:.4f}') #Acc: {epoch_acc:.4f}')
 
             # deep copy the model
-            if epoch_loss < best_loss#phase == 'val' and epoch_acc > best_acc:
+            if epoch_loss < best_loss:#phase == 'val' and epoch_acc > best_acc:
                 best_loss = epoch_loss#best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
@@ -132,10 +134,18 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     #print(f'Best val Acc: {best_acc:4f}')
 
-    # load best model weights
+    # load best model weights and save to file
     model.load_state_dict(best_model_wts)
+    torch.save(model.state_dict(), os.path.join(folder, filename))
     return model
 
+def load(folder="models", filename="finetuned.pt", device="cpu"):
+    with open(os.path.join(folder, filename), 'rb') as opened_file:
+        state_dict = torch.load(opened_file, map_location=device)
+        model = clip.model.build_model(state_dict).to(device)
+        if str(device) == "cpu":
+            model.float()
+        return model
 
 #Print out model architecture
 def describe_architecture(model):
