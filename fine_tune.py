@@ -14,59 +14,57 @@ import copy
 from data import Dataset
 from tqdm import tqdm #pip install tqdm
 from PIL import Image, ImageSequence
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-def train(folder="models/", filename="finetuned.pt"):
+def train(num_examples, batch_size, freeze, lr, num_epochs, keep,
+          folder="models/", filename="finetuned.pt"):
+
+    #Initialize the model
     device = "cuda" if torch.cuda.is_available() else "cpu" # If using GPU then use mixed precision training.
     model, preprocess = clip.load("ViT-B/32",device=device,jit=False) #Must set jit=False for training
     if device == "cpu":
         model.float()
 
-    freeze = 0.95
+    #Freeze the necessary parameters
     num_freeze = int(len(list(model.parameters())) * freeze)
     for param in list(model.parameters())[:num_freeze]:
         param.requires_grad = False
 
-    num_examples = 1
-    batch_size = 64
-    shuffle = True
-    train_dataset = Dataset(num_examples)
+    #Load the dataset
+    train_dataset = Dataset(num_examples=num_examples, keep=keep)
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=shuffle
+        train_dataset, batch_size=batch_size, shuffle=True
     )
 
-    loss_img = nn.CrossEntropyLoss()
-    loss_txt = nn.CrossEntropyLoss()
+    #Define the loss and the optimization method
+    loss = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
-        model.parameters(),
-        lr=5e-5, betas=(0.9,0.98),
-        eps=1e-6, weight_decay=0.2) #Params used from paper, the lr is smaller, more safe for fine tuning to new dataset
-    num_epochs = 5
+        model.parameters(), lr=lr, betas=(0.9,0.98), eps=1e-6, weight_decay=0.2
+    ) #Params used from paper, the lr is smaller, more safe for fine tuning to new dataset
 
+    #Start training
     start = time.time()
-    for epoch in tqdm(range(num_epochs)):
-        for images, texts in train_dataloader :
-            optimizer.zero_grad()
+    for epoch in tqdm(range(num_epochs), desc="Training"):
+        for images, texts in train_dataloader:
+            optimizer.zero_grad() #Zero out the gradients
 
-            #list_image,list_txt = batch #list_images is list of image in numpy array(np.uint8), or list of PIL images
+            logits_per_image, logits_per_text = model(images, texts) #Get model predictions
+            ground_truth = torch.arange(
+                min(batch_size, images.shape[0]), dtype=torch.long, device=device
+            ) #Get groundtruth
 
-            #images= torch.stack([preprocess(Image.open(img)) for img in list_image],dim=0).to(device) # omit the Image.fromarray if the images already in PIL format, change this line to images=list_image if using preprocess inside the dataset class
-            #texts = clip.tokenize(list_txt).to(device)
-
-            logits_per_image, logits_per_text = model(images, texts)
-
-            batch_size = images.shape[0]
-            ground_truth = torch.arange(batch_size,dtype=torch.long,device=device)
-
-            total_loss = (loss_img(logits_per_image,ground_truth) + loss_txt(logits_per_text,ground_truth))/2
-            print(f"Epoch: {epoch}")
-            print(f"Loss: {total_loss}\n")
+            #Compute loss
+            total_loss = (loss(logits_per_image,ground_truth) + loss(logits_per_text,ground_truth))/2
             total_loss.backward()
-            if device == "cpu":
-                optimizer.step()
+            optimizer.step()
+
+        print(f"Epoch: {epoch}")
+        print(f"Loss: {total_loss}\n")
 
     time_elapsed = time.time() - start
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     torch.save(model.state_dict(), os.path.join(folder, filename))
+
 
 def load(folder="models", filename="finetuned.pt", device="cpu"):
     with open(os.path.join(folder, filename), 'rb') as opened_file:
@@ -87,7 +85,28 @@ def describe_architecture(model):
         child_counter += 1
 
 if __name__ == "__main__":
-    train()#run_finetuning()
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--num_examples',
+                        default='20',
+                        help='How many examples to train on?')
+    parser.add_argument('--batch_size',
+                        default='64',
+                        help='How many examples per batch?')
+    parser.add_argument('--freeze',
+                        default='.9',
+                        help='What proportion of weights should be frozen?')
+    parser.add_argument('--lr',
+                        default='5e-5',
+                        help='What is the learning rate?')
+    parser.add_argument('--num_epochs',
+                        default='30',
+                        help='How many epochs?')
+    parser.add_argument('--keep',
+                        action='store_true',
+                        help='Indicates that you dont want to resave the data')
+    args = parser.parse_args()
+    train(int(args.num_examples), int(args.batch_size), float(args.freeze),
+          float(args.lr), int(args.num_epochs), args.keep)
 
 '''
 device = "cuda" if torch.cuda.is_available() else "cpu"
