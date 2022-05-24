@@ -13,12 +13,88 @@ import os
 import copy
 from data import Dataset
 from tqdm import tqdm #pip install tqdm
+from PIL import Image, ImageSequence
 
+def train(folder="models/", filename="finetuned.pt"):
+    device = "cuda" if torch.cuda.is_available() else "cpu" # If using GPU then use mixed precision training.
+    model, preprocess = clip.load("ViT-B/32",device=device,jit=False) #Must set jit=False for training
+    if device == "cpu":
+        model.float()
+
+    freeze = 0.95
+    num_freeze = int(len(list(model.parameters())) * freeze)
+    for param in list(model.parameters())[:num_freeze]:
+        param.requires_grad = False
+
+    num_examples = 1
+    batch_size = 64
+    shuffle = True
+    train_dataset = Dataset(num_examples)
+    train_dataloader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=shuffle
+    )
+
+    loss_img = nn.CrossEntropyLoss()
+    loss_txt = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=5e-5, betas=(0.9,0.98),
+        eps=1e-6, weight_decay=0.2) #Params used from paper, the lr is smaller, more safe for fine tuning to new dataset
+    num_epochs = 5
+
+    start = time.time()
+    for epoch in tqdm(range(num_epochs)):
+        for images, texts in train_dataloader :
+            optimizer.zero_grad()
+
+            #list_image,list_txt = batch #list_images is list of image in numpy array(np.uint8), or list of PIL images
+
+            #images= torch.stack([preprocess(Image.open(img)) for img in list_image],dim=0).to(device) # omit the Image.fromarray if the images already in PIL format, change this line to images=list_image if using preprocess inside the dataset class
+            #texts = clip.tokenize(list_txt).to(device)
+
+            logits_per_image, logits_per_text = model(images, texts)
+
+            batch_size = images.shape[0]
+            ground_truth = torch.arange(batch_size,dtype=torch.long,device=device)
+
+            total_loss = (loss_img(logits_per_image,ground_truth) + loss_txt(logits_per_text,ground_truth))/2
+            print(f"Epoch: {epoch}")
+            print(f"Loss: {total_loss}\n")
+            total_loss.backward()
+            if device == "cpu":
+                optimizer.step()
+
+    time_elapsed = time.time() - start
+    print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+    torch.save(model.state_dict(), os.path.join(folder, filename))
+
+def load(folder="models", filename="finetuned.pt", device="cpu"):
+    with open(os.path.join(folder, filename), 'rb') as opened_file:
+        state_dict = torch.load(opened_file, map_location=device)
+        model = clip.model.build_model(state_dict).to(device)
+        if str(device) == "cpu":
+            model.float()
+        return model
+
+#Print out model architecture
+def describe_architecture(model):
+
+    #Iterate through each child and print its contents
+    child_counter = 0
+    for child in model.children():
+        print(" child", child_counter, "is -")
+        print(child)
+        child_counter += 1
+
+if __name__ == "__main__":
+    train()#run_finetuning()
+
+'''
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 #Fine-tune the model
 def run_finetuning(model="ViT-B/32", folder='models', filename="finetuned.pt", loss_fn="mse_loss",
-                   lr=0.001, momentum=0.9, num_epochs=3, print_arch=False,
+                   lr=0.01, momentum=0.9, num_epochs=30, print_arch=False,
                    batch_size=64, shuffle=True, freeze=.75):
 
     #Load the model
@@ -55,7 +131,7 @@ def run_finetuning(model="ViT-B/32", folder='models', filename="finetuned.pt", l
         criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     trained_model = train_model(
-        model, filename, dataloaders, criterion, optimizer, num_epochs
+        model, folder, filename, dataloaders, criterion, optimizer, num_epochs
     )
     return trained_model
 
@@ -66,7 +142,7 @@ def load_dataset(batch_size, shuffle):
     )
     return {"train": train_loader}
 
-def train_model(model, filename, dataloaders, criterion, optimizer, num_epochs):
+def train_model(model, folder, filename, dataloaders, criterion, optimizer, num_epochs):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -138,24 +214,4 @@ def train_model(model, filename, dataloaders, criterion, optimizer, num_epochs):
     model.load_state_dict(best_model_wts)
     torch.save(model.state_dict(), os.path.join(folder, filename))
     return model
-
-def load(folder="models", filename="finetuned.pt", device="cpu"):
-    with open(os.path.join(folder, filename), 'rb') as opened_file:
-        state_dict = torch.load(opened_file, map_location=device)
-        model = clip.model.build_model(state_dict).to(device)
-        if str(device) == "cpu":
-            model.float()
-        return model
-
-#Print out model architecture
-def describe_architecture(model):
-
-    #Iterate through each child and print its contents
-    child_counter = 0
-    for child in model.children():
-        print(" child", child_counter, "is -")
-        print(child)
-        child_counter += 1
-
-if __name__ == "__main__":
-    run_finetuning()
+'''

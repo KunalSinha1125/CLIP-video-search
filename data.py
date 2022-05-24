@@ -17,8 +17,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
 class Dataset():
-    def __init__(self, vid_dir = "YouTubeClips/", img_dir="all_frames/",
-                 num_examples=20, skip=15, save=True):
+    def __init__(self, num_examples=20, vid_dir = "YouTubeClips/",
+                 img_dir="all_frames/", skip=15, save=True):
         vid2tex, tex2vid = get_dictionaries()
         if save:
             breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
