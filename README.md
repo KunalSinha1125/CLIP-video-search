@@ -7,4 +7,4 @@ run_clip(): https://github.com/openai/CLIP
 
 decompose_video(): https://techtutorialsx.com/2021/04/29/python-opencv-splitting-video-frames/
 
-fine_tune.py: https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
+fine_tune.py: https://github.com/openai/CLIP/issues/83
