@@ -22,34 +22,24 @@ class Dataset():
         vid2tex, tex2vid = get_dictionaries()
         if not keep:
             breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
-        image_names = os.listdir(img_dir)
-        text_descriptions = [name.split("_")[0] for name in image_names]
+        self.image_names = os.listdir(img_dir)
+        self.text_names = [name.split("_")[0] for name in self.image_names]
         self.images = torch.cat( #Create a tensor representation for the images
             [preprocess(Image.open(os.path.join(img_dir, img))).unsqueeze(0).to(device)
-            for img in image_names]
+            for img in self.image_names]
         ).to(device)
         self.texts = torch.cat(
-            [clip.tokenize(input) for input in text_descriptions]
+            [clip.tokenize(input) for input in self.text_names]
         ).to(device)
-        '''
-        self.labels = torch.zeros((len(self)), dtype=torch.long)
-        for i in range(len(self)):
-            vid = image_names[i].split("_")[0]
-            self.labels[i] = (text_descriptions.index(vid))
-        '''
-        '''
-        num_imgs = len(os.listdir(img_dir))
-        img_matrix = np.zeros((num_imgs, resolution, resolution, 3))
-        img_names = [os.path.join(img_dir, name) for name in os.listdir(img_dir)]
-        print("Preprocessing images...")
-        for i in tqdm(range(num_imgs)):
-            img_matrix[i] = cv2.resize(cv2.imread(img_names[i]), (resolution, resolution))
-        '''
+
     def __getitem__(self, idx):
-        return self.images[idx], self.texts[idx]#, self.labels[idx]
+        return self.images[idx], self.texts[idx]
 
     def __len__(self):
         return self.images.shape[0]
+
+    def get_names_lists(self):
+        return self.image_names, self.text_names
 
 def get_dictionaries(vid2tex_filename="vid2tex.json",
                     tex2vid_filename="tex2vid.json"):
