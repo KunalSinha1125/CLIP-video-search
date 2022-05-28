@@ -22,8 +22,8 @@ class Dataset():
         vid2tex, tex2vid = get_dictionaries()
         if not keep:
             breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
-        self.image_names = os.listdir(img_dir)
-        self.text_names = [name.split("_")[0] for name in self.image_names]
+        self.image_names = np.array(os.listdir(img_dir))
+        self.text_names = np.array([name.split("_")[0] for name in self.image_names])
         self.images = torch.cat( #Create a tensor representation for the images
             [preprocess(Image.open(os.path.join(img_dir, img))).unsqueeze(0).to(device)
             for img in self.image_names]
@@ -40,6 +40,15 @@ class Dataset():
 
     def get_names_lists(self):
         return self.image_names, self.text_names
+
+    def delete_redundant_frames(self, keyframes):
+        print("Deleting non-keyframes...")
+        mask = np.zeros(self.images.shape[0], dtype=bool)
+        mask[keyframes] = True
+        self.images = self.images[mask]
+        self.texts = self.texts[mask]
+        self.image_names = self.image_names[mask]
+        self.text_names = self.text_names[mask]
 
 def get_dictionaries(vid2tex_filename="vid2tex.json",
                     tex2vid_filename="tex2vid.json"):

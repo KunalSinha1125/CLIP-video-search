@@ -13,6 +13,7 @@ import keyframe
 import fine_tune
 import data
 from tqdm import tqdm #pip install tqdm
+import h_clustering
 
 frame_dir = 'all_frames/'
 video_dir = 'YouTubeClips/'
@@ -24,6 +25,9 @@ def main(num_examples, top_k, skip, keep, frame_type, model_type, batch_size, pr
     if model_type == "finetuned":
         model = fine_tune.load()
     test_dataset = data.Dataset(num_examples=num_examples, keep=keep)
+    if frame_type == "keyframe":
+        keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size)
+        test_dataset.delete_redundant_frames(keyframes)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=True
     )
