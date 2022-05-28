@@ -10,6 +10,8 @@ import json
 from time import sleep
 from progress.bar import Bar #pip install progress
 import keyframe
+import extracting_candidate_frames
+import clustering_with_hdbscan
 
 frame_dir = 'frames/'
 video_dir = 'YouTubeClips/'
@@ -104,7 +106,6 @@ if __name__ == "__main__":
                         default=True,
                         help='Specify whether to re-save the frames')
     parser.add_argument('--model_type',
-                        default='keyframe',
                         choices=['baseline', 'keyframe'],
                         help='Specify whether to re-save the frames')
     args = parser.parse_args()
