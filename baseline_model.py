@@ -73,7 +73,7 @@ if __name__ == "__main__":
                         choices=['baseline', 'keyframe'],
                         help='Specify how to save the frames')
     parser.add_argument('--model_type',
-                        default='finetuned',
+                        default='baseline',
                         choices=['baseline', 'finetuned'],
                         help='Specify which model to use')
     parser.add_argument('--batch_size',

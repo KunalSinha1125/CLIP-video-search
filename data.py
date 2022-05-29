@@ -42,7 +42,7 @@ class Dataset():
         return self.image_names, self.text_names
 
     def delete_redundant_frames(self, keyframes):
-        print("Deleting non-keyframes...")
+        print(f"Keyframes list: {keyframes}")
         mask = np.zeros(self.images.shape[0], dtype=bool)
         mask[keyframes] = True
         self.images = self.images[mask]
@@ -69,7 +69,7 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip,
     else:
         print(f"Creating new folder {img_dir}")
         os.mkdir(img_dir)
-    print(f"Saving new frames in {img_dir}\n")
+    print(f"Saving new frames in {img_dir}")
     for vid, tex in list(vid2tex.items())[:num_examples]:
         vid_path = os.path.join(vid_dir, vid + vid_type)
         capture = cv2.VideoCapture(vid_path)

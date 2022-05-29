@@ -58,8 +58,8 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep,
             total_loss.backward()
             optimizer.step()
 
-        print(f"Epoch: {epoch}")
-        print(f"Loss: {total_loss}\n")
+            print(f"Epoch: {epoch}")
+            print(f"Loss: {total_loss}\n")
 
     time_elapsed = time.time() - start
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
