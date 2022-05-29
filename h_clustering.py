@@ -16,7 +16,7 @@ def clusterKeyFrames(dataset, batch_size):
     for images, texts in dataloader:
         image_features_list += model.encode_image(images).tolist()
 
-    hc = AgglomerativeClustering(n_clusters=None, affinity = 'euclidean', linkage = 'ward', distance_threshold=10)
+    hc = AgglomerativeClustering(n_clusters=dataset.get_num_frames_saved(), affinity='euclidean', linkage='ward', distance_threshold=None)
 
     y_hc = hc.fit_predict(image_features_list)
     assignments = set(y_hc) # unique assignments
@@ -30,4 +30,4 @@ def clusterKeyFrames(dataset, batch_size):
     keyFrames = []
     for assign in assignDict.keys():
         keyFrames += random.sample(assignDict[assign], 1)
-    return set(keyFrames)
+    return keyFrames
