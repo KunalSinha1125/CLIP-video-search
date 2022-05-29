@@ -20,7 +20,7 @@ video_dir = 'YouTubeClips/'
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def main(num_examples, top_k, skip, keep, frame_type, model_type, batch_size, print_preds):
+def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size, print_preds):
     model, preprocess = clip.load("ViT-B/32", device=device)
     if model_type == "finetuned":
         model = fine_tune.load()
@@ -62,9 +62,9 @@ if __name__ == "__main__":
     parser.add_argument('--top_k',
                         default=1,
                         help='How many frames to retrieve?')
-    parser.add_argument('--skip',
-                        default=15,
-                        help='How many frames to skip while saving?')
+    parser.add_argument('--save_fps',
+                        default=1,
+                        help='How many frames per second to save?')
     parser.add_argument('--keep',
                         action='store_true',
                         help='Specify whether to keep the frames or resave them')
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                         help='''Should we print each model prediction?
                             Warning: could take up a lot of space''')
     args = parser.parse_args()
-    main(int(args.num_examples), int(args.top_k), int(args.skip), args.keep,
+    main(int(args.num_examples), int(args.top_k), int(args.save_fps), args.keep,
          args.frame_type, args.model_type, int(args.batch_size), args.print_preds)
 
 '''
@@ -113,7 +113,7 @@ def run_clip(vid2tex, tex2vid, image_inputs, text_input,
     print(f"\nUser input: {text_input}:")
     return num_correct
 
-def get_images(num_examples, skip, save, frame_type):
+def get_images(num_examples, save_fps, save, frame_type):
     video_list = os.listdir(video_dir)
     image_inputs = []
     for i in range(num_examples):
@@ -129,7 +129,7 @@ def get_images(num_examples, skip, save, frame_type):
                 os.makedirs(frame_path)
             print(f"Saving new frames for video {video_input}")
             if frame_type == "baseline":
-                images_list = dataset_processor.decompose_video(frame_path, video_input, skip)
+                images_list = dataset_processor.decompose_video(frame_path, video_input, save_fps)
             elif frame_type == "keyframe":
                 images_list = keyframe.decompose_video1(frame_path, video_input)
         else: #os.path.exists(frame_path):
