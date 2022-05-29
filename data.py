@@ -15,13 +15,19 @@ import numpy as np
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
+FPS = 30
 
 class Dataset():
     def __init__(self, num_examples=20, vid_dir = "YouTubeClips/",
-                 img_dir="all_frames/", skip=15, keep=False):
+                 img_dir="all_frames/", save_fps=1, keep=False):
         vid2tex, tex2vid = get_dictionaries()
-        if not keep:
-            breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip)
+        self.frames_saved = 0
+        if keep:
+            self.frames_saved = len(os.listdir(img_dir))
+        else:
+            self.frames_saved = breakdown_video(
+                vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps
+            )
         self.image_names = np.array(os.listdir(img_dir))
         self.text_names = np.array([name.split("_")[0] for name in self.image_names])
         self.images = torch.cat( #Create a tensor representation for the images
@@ -41,6 +47,9 @@ class Dataset():
     def get_names_lists(self):
         return self.image_names, self.text_names
 
+    def get_num_frames_saved(self):
+        return self.frames_saved
+
     def delete_redundant_frames(self, keyframes):
         print(f"Keyframes list: {keyframes}")
         mask = np.zeros(self.images.shape[0], dtype=bool)
@@ -59,7 +68,7 @@ def get_dictionaries(vid2tex_filename="vid2tex.json",
         tex2vid = json.load(f2)
     return vid2tex, tex2vid
 
-def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip,
+def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
                     vid_type=".avi", img_type=".png"):
     if os.path.exists(img_dir):
         print(f"Deleting old frames saved in {img_dir}")
@@ -73,18 +82,21 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, skip,
     for vid, tex in list(vid2tex.items())[:num_examples]:
         vid_path = os.path.join(vid_dir, vid + vid_type)
         capture = cv2.VideoCapture(vid_path)
-        frame_num = 0
+        frames_total = 0
+        frames_saved = 0
         while True:
             success, frame = capture.read()
-            if frame_num % skip == 0:
+            if frames_total % (FPS / save_fps) == 0:
                 if success:
                     filename = os.path.join(
-                        img_dir, tex[0] + "_" + str(frame_num) + img_type
+                        img_dir, tex[0] + "_" + str(frames_total) + img_type
                     )
                     if os.path.exists(filename):
                         os.remove(filename)
                     cv2.imwrite(filename, frame)
+                    frames_saved += 1
                 else:
                     break
-            frame_num += 1
+            frames_total += 1
     capture.release()
+    return frames_saved
