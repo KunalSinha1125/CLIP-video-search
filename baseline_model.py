@@ -67,6 +67,7 @@ if __name__ == "__main__":
                         help='How many frames per second to save?')
     parser.add_argument('--keep',
                         action='store_true',
+                        default = True,
                         help='Specify whether to re-save the frames')
     parser.add_argument('--frame_type',
                         default='keyframe',
