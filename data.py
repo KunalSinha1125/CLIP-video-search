@@ -48,6 +48,7 @@ class Dataset():
         return self.image_names, self.text_names
 
     def get_num_frames_saved(self):
+        import pdb; pdb.set_trace()
         return self.frames_saved
 
     def delete_redundant_frames(self, keyframes):
@@ -82,17 +83,17 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
     data_list = list(vid2tex.items())
     if data_type == "finetuned":
         data_list = data_list[::-1]
+    frames_saved = 0
     for vid, tex in data_list[:num_examples]:
+        frame_num = 0
         vid_path = os.path.join(vid_dir, vid + vid_type)
         capture = cv2.VideoCapture(vid_path)
-        frames_total = 0
-        frames_saved = 0
         while True:
             success, frame = capture.read()
-            if frames_total % (FPS / save_fps) == 0:
+            if frame_num % (FPS / save_fps) == 0:
                 if success:
                     filename = os.path.join(
-                        img_dir, tex[0] + "_" + str(frames_total) + img_type
+                        img_dir, tex[0] + "_" + str(frame_num) + img_type
                     )
                     if os.path.exists(filename):
                         os.remove(filename)
@@ -100,6 +101,6 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
                     frames_saved += 1
                 else:
                     break
-            frames_total += 1
+            frame_num += 1
     capture.release()
     return frames_saved
