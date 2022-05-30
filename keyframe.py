@@ -62,13 +62,12 @@ def decompose_video1(frame_path, video_input, filetype='png'):
         else:
             break
 
-    print("--- %s seconds ---" % (time.time() - start_time))
-
+    print(count)
     final_arr = arr.transpose() #transposing so that i will have all frames in columns i.e M*N dimensional matrix
 
 
     A = csc_matrix(final_arr, dtype=float)
-
+    print(A.shape)
     #top 63 singular values from 76082 to 508
     print('A size:', A.shape)
     u, s, vt = svds(A, k = 63)
@@ -78,8 +77,6 @@ def decompose_video1(frame_path, video_input, filetype='png'):
     projections = v1_t @ np.diag(s) #the column vectors i.e the frame histogram data has been projected onto the orthonormal basis
     #formed by vectors of the left singular matrix u .The coordinates of the frames in this space are given by v1_t @ np.diag(s)
     #So we can see that , now we need only 63 dimensions to represent each column/frame
-    print(projections.shape)
-    (1832, 63)
     #dynamic clustering of projected frame histograms to find which all frames are similar i.e make shots
     f=projections
     C = dict() #to store frames in respective cluster
@@ -122,15 +119,15 @@ def decompose_video1(frame_path, video_input, filetype='png'):
     #transition between shots so we will ignore these frames which lies in such clusters and wherever the clusters are densely populated indicates they form shots
     #and we can take the last element of these shots to summarise that particular shot
 
+
     for i in range(f.shape[0]):
         b.append(C[i].shape[0])
 
     last = b.index(0)  #where we find 0 in b indicates that all required clusters have been formed , so we can delete these from C
     b1=b[:last ] #The size of each cluster.
+
     res = [idx for idx, val in enumerate(b1) if val >= 25] #so i am assuming any dense cluster with atleast 25 frames is eligible to
     #make shot.
-    print(len(res)) #so total 25 shots with 46 (71-25) cuts
-    25
     GG = C #copying the elements of C to GG, the purpose of  the below code is to label each cluster so later
     #it would be easier to identify frames in each cluster
     for i in range(last):
@@ -146,10 +143,9 @@ def decompose_video1(frame_path, video_input, filetype='png'):
     for i in range(1, 65):
         col_name = "v" + str(i)
         colnames+= [col_name]
-    print(colnames)
 
     df = pd.DataFrame(F, columns= colnames)
-    ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10', 'v11', 'v12', 'v13', 'v14', 'v15', 'v16', 'v17', 'v18', 'v19', 'v20', 'v21', 'v22', 'v23', 'v24', 'v25', 'v26', 'v27', 'v28', 'v29', 'v30', 'v31', 'v32', 'v33', 'v34', 'v35', 'v36', 'v37', 'v38', 'v39', 'v40', 'v41', 'v42', 'v43', 'v44', 'v45', 'v46', 'v47', 'v48', 'v49', 'v50', 'v51', 'v52', 'v53', 'v54', 'v55', 'v56', 'v57', 'v58', 'v59', 'v60', 'v61', 'v62', 'v63', 'v64']
+    
     df['v64']= df['v64'].astype(int)  #converting the cluster level from float type to integer type
     df1 =  df[df.v64.isin(res)]   #filter only those frames which are eligible to be a part of shot or filter those frames who are
     #part of required clusters that have more than 25 frames in it
