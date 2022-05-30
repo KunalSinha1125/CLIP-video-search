@@ -18,7 +18,7 @@ model, preprocess = clip.load("ViT-B/32", device=device)
 FPS = 30
 
 class Dataset():
-    def __init__(self, num_examples=20, vid_dir = "YouTubeClips/",
+    def __init__(self, num_examples=20, vid_dir = "YouTubeClips/", data_type="baseline",
                  img_dir="all_frames/", save_fps=1, keep=False):
         vid2tex, tex2vid = get_dictionaries()
         self.frames_saved = 0
@@ -26,7 +26,7 @@ class Dataset():
             self.frames_saved = len(os.listdir(img_dir))
         else:
             self.frames_saved = breakdown_video(
-                vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps
+                vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps, data_type
             )
         self.image_names = np.array(os.listdir(img_dir))
         self.text_names = np.array([name.split("_")[0] for name in self.image_names])
@@ -69,7 +69,7 @@ def get_dictionaries(vid2tex_filename="vid2tex.json",
     return vid2tex, tex2vid
 
 def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
-                    vid_type=".avi", img_type=".png"):
+                    data_type, vid_type=".avi", img_type=".png"):
     if os.path.exists(img_dir):
         print(f"Deleting old frames saved in {img_dir}")
         for root, dirs, old_files in os.walk(img_dir):
@@ -79,7 +79,10 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
         print(f"Creating new folder {img_dir}")
         os.mkdir(img_dir)
     print(f"Saving new frames in {img_dir}")
-    for vid, tex in list(vid2tex.items())[:num_examples]:
+    data_list = list(vid2tex.items())
+    if data_type == "finetuned":
+        data_list = data_list[::-1]
+    for vid, tex in data_list[:num_examples]:
         vid_path = os.path.join(vid_dir, vid + vid_type)
         capture = cv2.VideoCapture(vid_path)
         frames_total = 0
