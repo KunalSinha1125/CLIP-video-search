@@ -31,7 +31,9 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep, save_fps,
         param.requires_grad = False
 
     #Load the dataset
-    train_dataset = Dataset(num_examples=num_examples, save_fps=save_fps, keep=keep)
+    train_dataset = Dataset(
+        num_examples=num_examples, save_fps=save_fps, keep=keep, data_type="finetuned"
+    )
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
@@ -63,6 +65,10 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep, save_fps,
 
     time_elapsed = time.time() - start
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    model_dir = os.path.join(folder, filename)
+    print(f"Saving model as {model_dir}")
     torch.save(model.state_dict(), os.path.join(folder, filename))
 
 
