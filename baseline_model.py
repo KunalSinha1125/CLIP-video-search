@@ -32,25 +32,25 @@ def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size
         test_dataset, batch_size=batch_size, shuffle=True
     )
     num_correct = 0
-    for images, texts in tqdm(test_dataloader, desc="Testing batches"):
+    for i, (images, texts) in enumerate(tqdm(test_dataloader, desc="Testing batches")):
+        #We process the images in batches but feed in all unique text descriptions at once
+        texts = test_dataset.unique_texts
         _, similarity = model(images, texts)
         num_correct += analyze_results(
             test_dataset, similarity, num_examples, images, texts, top_k, print_preds
         )
-    print(f"\nFinal accuracy is {num_correct / len(test_dataset)}")
+    print(f"\nFinal accuracy is {num_correct / len(test_dataset.unique_text_names)}")
 
 def analyze_results(test_dataset, similarity, num_examples, image_inputs, text_inputs, top_k=1, print_preds=False):
     num_correct = 0
     values, indices = similarity.topk(top_k)
     for i, (value, index) in enumerate(zip(values, indices)):
-        image_names, text_names = test_dataset.get_names_lists()
-        actual = text_names[i]
-        pred = text_names[index]
+        actual = test_dataset.unique_text_names[i]
+        pred = test_dataset.text_names[index]
         num_correct += (actual == pred)
         if print_preds:
             print(f"Actual: {actual}")
             print(f"Predicted: video {pred}")
-            print(f"Frame: {image_names[index]:>16s}")
             print(f"Probability: {value.item():.2f}%")
     return num_correct
 
