@@ -57,7 +57,7 @@ def analyze_results(test_dataset, similarity, num_examples, image_inputs, text_i
 if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('--num_examples',
-                        default=20,
+                        default=100,
                         help='How many examples to test on?')
     parser.add_argument('--top_k',
                         default=1,
@@ -69,10 +69,8 @@ if __name__ == "__main__":
                         action='store_true',
                         default=True,
                         help='Specify whether to re-save the frames')
-    parser.add_argument('--model_type',
-                        help='Specify whether to keep the frames or resave them')
     parser.add_argument('--frame_type',
-                        default='baseline',
+                        default='keyframe',
                         choices=['baseline', 'keyframe'],
                         help='Specify how to save the frames')
     parser.add_argument('--model_type',
