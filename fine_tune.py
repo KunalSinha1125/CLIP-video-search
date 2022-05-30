@@ -16,7 +16,7 @@ from tqdm import tqdm #pip install tqdm
 from PIL import Image, ImageSequence
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-def train(num_examples, batch_size, freeze, lr, num_epochs, keep,
+def train(num_examples, batch_size, freeze, lr, num_epochs, keep, save_fps,
           folder="models/", filename="finetuned.pt"):
 
     #Initialize the model
@@ -31,7 +31,7 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep,
         param.requires_grad = False
 
     #Load the dataset
-    train_dataset = Dataset(num_examples=num_examples, keep=keep)
+    train_dataset = Dataset(num_examples=num_examples, save_fps=save_fps, keep=keep)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
@@ -104,9 +104,12 @@ if __name__ == "__main__":
     parser.add_argument('--keep',
                         action='store_true',
                         help='Indicates that you dont want to resave the data')
+    parser.add_argument('--save_fps',
+                        default=1,
+                        help='How many frames per second to save')
     args = parser.parse_args()
     train(int(args.num_examples), int(args.batch_size), float(args.freeze),
-          float(args.lr), int(args.num_epochs), args.keep)
+          float(args.lr), int(args.num_epochs), args.keep, int(args.save_fps))
 
 '''
 device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -24,7 +24,7 @@ def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size
     model, preprocess = clip.load("ViT-B/32", device=device)
     if model_type == "finetuned":
         model = fine_tune.load()
-    test_dataset = data.Dataset(num_examples=num_examples, keep=keep)
+    test_dataset = data.Dataset(num_examples=num_examples, save_fps=save_fps, keep=keep)
     if frame_type == "keyframe":
         keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size)
         test_dataset.delete_redundant_frames(keyframes)
