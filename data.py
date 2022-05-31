@@ -57,6 +57,8 @@ class Dataset():
         mask[keyframes] = True
         self.images = self.images[mask]
         self.image_names = self.image_names[mask]
+        self.texts = self.texts[mask]
+        self.text_names = self.text_names[mask]
 
 def get_dictionaries(vid2tex_filename="vid2tex.json",
                     tex2vid_filename="tex2vid.json"):
