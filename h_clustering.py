@@ -1,14 +1,14 @@
 import os
 import torch
 import clip
-from data import Dataset
+from data import Dataset, FPS
 import random
 from sklearn.cluster import AgglomerativeClustering
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def clusterKeyFrames(dataset, batch_size):
+def clusterKeyFrames(dataset, batch_size, save_fps=1):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     #get image features
@@ -16,7 +16,11 @@ def clusterKeyFrames(dataset, batch_size):
     for images, texts in dataloader:
         image_features_list += model.encode_image(images).tolist()
 
-    hc = AgglomerativeClustering(n_clusters=dataset.get_num_frames_saved(), affinity='euclidean', linkage='ward', distance_threshold=None)
+    num_frames_to_save = int(dataset.total_num_frames * (save_fps / FPS))
+    hc = AgglomerativeClustering(
+        n_clusters=num_frames_to_save,
+        affinity='euclidean', linkage='ward', distance_threshold=None
+    )
 
     y_hc = hc.fit_predict(image_features_list)
     assignments = set(y_hc) # unique assignments
@@ -30,5 +34,4 @@ def clusterKeyFrames(dataset, batch_size):
     keyFrames = []
     for assign in assignDict.keys():
         keyFrames += random.sample(assignDict[assign], 1)
-    print(keyFrames)
     return keyFrames
