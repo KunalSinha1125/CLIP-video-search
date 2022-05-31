@@ -56,7 +56,7 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep, save_fps,
 
             #Get groundtruth
             text_names = np.array(text_names).reshape(1, len(text_names))
-            image_groundtruth = torch.tensor(text_names == text_names.T, dtype=torch.float32)
+            image_groundtruth = torch.tensor((text_names == text_names.T) * 100, dtype=torch.float32)
             text_groundtruth = torch.transpose(image_groundtruth, 0, 1)
 
             #Compute loss
