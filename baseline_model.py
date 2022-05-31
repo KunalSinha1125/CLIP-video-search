@@ -24,9 +24,16 @@ def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size
     model, preprocess = clip.load("ViT-B/32", device=device)
     if model_type == "finetuned":
         model = fine_tune.load()
-    test_dataset = data.Dataset(num_examples=num_examples, save_fps=save_fps, keep=keep)
-    if frame_type == "keyframe":
-        keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size)
+    test_dataset = None
+    if frame_type == "baseline":
+        test_dataset = data.Dataset(
+            num_examples=num_examples, save_fps=save_fps, keep=keep
+        )
+    elif frame_type == "keyframe":
+        test_dataset = data.Dataset(
+            num_examples=num_examples, save_fps=data.FPS, keep=keep
+        )
+        keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size, save_fps)
         test_dataset.delete_redundant_frames(keyframes)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=True

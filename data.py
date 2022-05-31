@@ -21,11 +21,11 @@ class Dataset():
     def __init__(self, num_examples=20, vid_dir = "YouTubeClips/", data_type="baseline",
                  img_dir="all_frames/", save_fps=1, keep=False):
         vid2tex, tex2vid = get_dictionaries()
-        self.frames_saved = 0
+        self.total_num_frames = 0
         if keep:
-            self.frames_saved = len(os.listdir(img_dir))
+            self.total_num_frames = len(os.listdir(img_dir))
         else:
-            self.frames_saved = breakdown_video(
+            self.total_num_frames = breakdown_video(
                 vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps, data_type
             )
         self.image_names = np.array(os.listdir(img_dir))
@@ -48,11 +48,8 @@ class Dataset():
     def __len__(self):
         return self.images.shape[0]
 
-    def get_num_frames_saved(self):
-        return self.frames_saved
-
     def delete_redundant_frames(self, keyframes):
-        print(f"Keyframes list: {keyframes}")
+        print(f"Number of keyframes extracted: {len(keyframes)}")
         mask = np.zeros(self.images.shape[0], dtype=bool)
         mask[keyframes] = True
         self.images = self.images[mask]
@@ -83,13 +80,14 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
     data_list = list(vid2tex.items())
     if data_type == "finetuned":
         data_list = data_list[::-1]
-    frames_saved = 0
+    total_num_frames = 0
     for vid, tex in data_list[:num_examples]:
         frame_num = 0
         vid_path = os.path.join(vid_dir, vid + vid_type)
         capture = cv2.VideoCapture(vid_path)
         while True:
             success, frame = capture.read()
+            total_num_frames += 1
             if frame_num % (FPS / save_fps) == 0:
                 if success:
                     filename = os.path.join(
@@ -98,9 +96,8 @@ def breakdown_video(vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps,
                     if os.path.exists(filename):
                         os.remove(filename)
                     cv2.imwrite(filename, frame)
-                    frames_saved += 1
                 else:
                     break
             frame_num += 1
     capture.release()
-    return frames_saved
+    return total_num_frames
