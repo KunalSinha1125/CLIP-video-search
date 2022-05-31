@@ -30,5 +30,4 @@ def clusterKeyFrames(dataset, batch_size):
     keyFrames = []
     for assign in assignDict.keys():
         keyFrames += random.sample(assignDict[assign], 1)
-    print(keyFrames)
     return keyFrames

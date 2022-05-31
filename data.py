@@ -48,7 +48,6 @@ class Dataset():
         return self.image_names, self.text_names
 
     def get_num_frames_saved(self):
-        import pdb; pdb.set_trace()
         return self.frames_saved
 
     def delete_redundant_frames(self, keyframes):
