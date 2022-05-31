@@ -39,7 +39,7 @@ def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size
         test_dataset, batch_size=batch_size, shuffle=True
     )
     num_correct = 0
-    for i, (images, texts) in enumerate(tqdm(test_dataloader, desc="Testing batches")):
+    for i, (images, texts, image_names, text_names) in enumerate(tqdm(test_dataloader, desc="Testing batches")):
         #We process the images in batches but feed in all unique text descriptions at once
         texts = test_dataset.unique_texts
         _, similarity = model(images, texts)

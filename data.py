@@ -28,12 +28,12 @@ class Dataset():
             self.total_num_frames = breakdown_video(
                 vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps, data_type
             )
-        self.image_names = np.array(os.listdir(img_dir))
+        self.image_names = os.listdir(img_dir)
         self.images = torch.cat( #Create a tensor representation for the images
             [preprocess(Image.open(os.path.join(img_dir, img))).unsqueeze(0).to(device)
             for img in self.image_names]
         ).to(device)
-        self.text_names = np.array([name.split("_")[0] for name in self.image_names])
+        self.text_names = [name.split("_")[0] for name in self.image_names]
         self.texts = torch.cat(
             [clip.tokenize(input) for input in self.text_names]
         ).to(device)
@@ -43,7 +43,7 @@ class Dataset():
         ).to(device)
 
     def __getitem__(self, idx):
-        return self.images[idx], self.texts[idx]
+        return self.images[idx], self.texts[idx], self.image_names[idx], self.text_names[idx]
 
     def __len__(self):
         return self.images.shape[0]

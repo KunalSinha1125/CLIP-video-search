@@ -47,16 +47,20 @@ def train(num_examples, batch_size, freeze, lr, num_epochs, keep, save_fps,
     #Start training
     start = time.time()
     for epoch in tqdm(range(num_epochs), desc="Training"):
-        for images, texts in train_dataloader:
-            optimizer.zero_grad() #Zero out the gradients
+        for i, (images, texts, image_names, text_names) in enumerate(train_dataloader):
+            #Zero out the gradients
+            optimizer.zero_grad()
 
-            logits_per_image, logits_per_text = model(images, texts) #Get model predictions
-            ground_truth = torch.arange(
-                min(batch_size, images.shape[0]), dtype=torch.long, device=device
-            ) #Get groundtruth
+             #Get model predictions
+            image_logits, text_logits = model(images, texts)
+
+            #Get groundtruth
+            text_names = np.array(text_names).reshape(1, len(text_names))
+            image_groundtruth = torch.tensor(text_names == text_names.T, dtype=torch.float32)
+            text_groundtruth = torch.transpose(image_groundtruth, 0, 1)
 
             #Compute loss
-            total_loss = (loss(logits_per_image,ground_truth) + loss(logits_per_text,ground_truth))/2
+            total_loss = (loss(image_logits, image_groundtruth) + loss(text_logits, text_groundtruth)) / 2
             total_loss.backward()
             optimizer.step()
 
