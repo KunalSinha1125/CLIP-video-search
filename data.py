@@ -29,13 +29,17 @@ class Dataset():
                 vid2tex, tex2vid, vid_dir, img_dir, num_examples, save_fps, data_type
             )
         self.image_names = np.array(os.listdir(img_dir))
-        self.text_names = np.array([name.split("_")[0] for name in self.image_names])
         self.images = torch.cat( #Create a tensor representation for the images
             [preprocess(Image.open(os.path.join(img_dir, img))).unsqueeze(0).to(device)
             for img in self.image_names]
         ).to(device)
+        self.text_names = np.array([name.split("_")[0] for name in self.image_names])
         self.texts = torch.cat(
             [clip.tokenize(input) for input in self.text_names]
+        ).to(device)
+        self.unique_text_names = list(dict.fromkeys(self.text_names))
+        self.unique_texts = torch.cat(
+            [clip.tokenize(input) for input in self.unique_text_names]
         ).to(device)
 
     def __getitem__(self, idx):
@@ -43,9 +47,6 @@ class Dataset():
 
     def __len__(self):
         return self.images.shape[0]
-
-    def get_names_lists(self):
-        return self.image_names, self.text_names
 
     def get_num_frames_saved(self):
         return self.frames_saved
@@ -55,8 +56,8 @@ class Dataset():
         mask = np.zeros(self.images.shape[0], dtype=bool)
         mask[keyframes] = True
         self.images = self.images[mask]
-        self.texts = self.texts[mask]
         self.image_names = self.image_names[mask]
+        self.texts = self.texts[mask]
         self.text_names = self.text_names[mask]
 
 def get_dictionaries(vid2tex_filename="vid2tex.json",
