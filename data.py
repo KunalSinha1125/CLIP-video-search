@@ -49,7 +49,7 @@ class Dataset():
         return self.images.shape[0]
 
     def delete_redundant_frames(self, keyframes):
-        print(f"Keyframes list: {keyframes}")
+        print(f"Number of keyframes extracted: {len(keyframes)}")
         mask = np.zeros(self.images.shape[0], dtype=bool)
         mask[keyframes] = True
         self.images = self.images[mask]
