@@ -91,7 +91,8 @@ if __name__ == "__main__":
                         help='Set distance threshold for clustering')
     args = parser.parse_args()
     main(int(args.num_examples), int(args.top_k), int(args.save_fps), args.keep,
-         args.frame_type, args.model_type, int(args.batch_size), args.print_preds)
+         args.frame_type, args.model_type, int(args.batch_size), args.print_preds,
+         float(args.threshold))
 
 '''
 def get_image_embeddings(image_inputs):
