@@ -70,7 +70,7 @@ if __name__ == "__main__":
                         default=1,
                         help='How many frames to retrieve?')
     parser.add_argument('--save_fps',
-                        default=30,
+                        default=1,
                         help='How many frames per second to save?')
     parser.add_argument('--keep',
                         action='store_true',

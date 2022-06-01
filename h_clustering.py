@@ -13,7 +13,7 @@ def clusterKeyFrames(dataset, batch_size, save_fps=1):
 
     #get image features
     image_features_list = []
-    for images, texts in dataloader:
+    for images, texts, image_names, text_names, in dataloader:
         image_features_list += model.encode_image(images).tolist()
 
     num_frames_to_save = int(dataset.total_num_frames * (save_fps / FPS))
