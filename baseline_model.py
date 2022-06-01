@@ -20,20 +20,15 @@ video_dir = 'YouTubeClips/'
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size, print_preds):
+def main(num_examples, top_k, save_fps, keep, frame_type, model_type, batch_size, print_preds, threshold):
     model, preprocess = clip.load("ViT-B/32", device=device)
     if model_type == "finetuned":
         model = fine_tune.load()
-    test_dataset = None
-    if frame_type == "baseline":
-        test_dataset = data.Dataset(
-            num_examples=num_examples, save_fps=save_fps, keep=keep
-        )
-    elif frame_type == "keyframe":
-        test_dataset = data.Dataset(
-            num_examples=num_examples, save_fps=data.FPS, keep=keep
-        )
-        keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size, save_fps)
+    test_dataset = data.Dataset(
+        num_examples=num_examples, save_fps=save_fps, keep=keep
+    )
+    if frame_type == "keyframe":
+        keyframes = h_clustering.clusterKeyFrames(test_dataset, batch_size, threshold)
         test_dataset.delete_redundant_frames(keyframes)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=True
@@ -91,6 +86,9 @@ if __name__ == "__main__":
                         action='store_true',
                         help='''Should we print each model prediction?
                             Warning: could take up a lot of space''')
+    parser.add_argument('--threshold',
+                        default=0.5,
+                        help='Set distance threshold for clustering')
     args = parser.parse_args()
     main(int(args.num_examples), int(args.top_k), int(args.save_fps), args.keep,
          args.frame_type, args.model_type, int(args.batch_size), args.print_preds)

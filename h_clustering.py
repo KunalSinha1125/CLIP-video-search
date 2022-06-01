@@ -8,7 +8,7 @@ from sklearn.cluster import AgglomerativeClustering
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def clusterKeyFrames(dataset, batch_size, save_fps=1):
+def clusterKeyFrames(dataset, batch_size, threshold):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     #get image features
@@ -16,10 +16,10 @@ def clusterKeyFrames(dataset, batch_size, save_fps=1):
     for images, texts, image_names, text_names, in dataloader:
         image_features_list += model.encode_image(images).tolist()
 
-    num_frames_to_save = int(dataset.total_num_frames * (save_fps / FPS))
+    #num_frames_to_save = int(dataset.total_num_frames * (save_fps / FPS))
     hc = AgglomerativeClustering(
         n_clusters=num_frames_to_save,
-        affinity='euclidean', linkage='ward', distance_threshold=None
+        affinity='euclidean', linkage='ward', distance_threshold=threshold
     )
 
     y_hc = hc.fit_predict(image_features_list)
