@@ -87,76 +87,9 @@ if __name__ == "__main__":
                         help='''Should we print each model prediction?
                             Warning: could take up a lot of space''')
     parser.add_argument('--threshold',
-                        default=0.5,
+                        default=0.05,
                         help='Set distance threshold for clustering')
     args = parser.parse_args()
     main(int(args.num_examples), int(args.top_k), int(args.save_fps), args.keep,
          args.frame_type, args.model_type, int(args.batch_size), args.print_preds,
          float(args.threshold))
-
-'''
-def get_image_embeddings(image_inputs):
-    images = torch.cat( #Create a tensor representation for the images
-        [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
-    ).to(device)
-    with torch.no_grad():
-        image_features = model.encode_image(images) #Produce image embeddings
-    return image_features
-
-def get_text_embedding(text_input):
-    text = clip.tokenize(text_input).to(device) #Create a tensor representation for the text
-    with torch.no_grad():
-        text_features = model.encode_text(text) #Produce text embeddings
-    return text_features
-
-def run_clip(vid2tex, tex2vid, image_inputs, text_input,
-                image_features, text_features, top_k=1):
-    # Pick the top 5 most similar labels for the image
-    image_features /= image_features.norm(dim=-1, keepdim=True)
-    text_features /= text_features.norm(dim=-1, keepdim=True)
-    similarity = (100.0 * text_features @ image_features.T).softmax(dim=-1)
-    values, indices = similarity[0].topk(top_k)
-    # Print the result
-    print(f"\nUser input: {text_input}:")
-    return num_correct
-
-def get_images(num_examples, save_fps, save, frame_type):
-    video_list = os.listdir(video_dir)
-    image_inputs = []
-    for i in range(num_examples):
-        video_input = video_list[i]
-        frame_path = os.path.join(frame_dir, video_input)
-        if save:
-            if os.path.exists(frame_path):
-                print(f"Deleting old frames saved in {video_input}")
-                for root, dirs, old_files in os.walk(frame_path):
-                    for old in old_files:
-                        os.remove(os.path.join(root, old))
-            else:
-                os.makedirs(frame_path)
-            print(f"Saving new frames for video {video_input}")
-            if frame_type == "baseline":
-                images_list = dataset_processor.decompose_video(frame_path, video_input, save_fps)
-            elif frame_type == "keyframe":
-                images_list = keyframe.decompose_video1(frame_path, video_input)
-        else: #os.path.exists(frame_path):
-            images_list = [os.path.join(frame_path, image)
-                for image in os.listdir(frame_path)]
-        for image in images_list:
-            image_inputs.append(image)
-    return image_inputs
-
-def get_texts(num_examples, vid2tex):
-    text_inputs = [desc[0] for desc in vid2tex.values()]
-    return text_inputs[:num_examples]
-
-def compute_similarity(model, preprocess, image_inputs, text_inputs):
-    images = torch.cat( #Create a tensor representation for the images
-        [preprocess(Image.open(img)).unsqueeze(0).to(device) for img in image_inputs]
-    ).to(device)
-    texts = torch.cat(
-        [clip.tokenize(input) for input in text_inputs]
-    ).to(device)
-    _, similarity = model(images, texts)
-    return similarity
-'''

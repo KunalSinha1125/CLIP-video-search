@@ -18,7 +18,7 @@ def clusterKeyFrames(dataset, batch_size, threshold):
 
     #num_frames_to_save = int(dataset.total_num_frames * (save_fps / FPS))
     hc = AgglomerativeClustering(
-        n_clusters=num_frames_to_save,
+        n_clusters=None,
         affinity='euclidean', linkage='ward', distance_threshold=threshold
     )
 

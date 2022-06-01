@@ -57,8 +57,8 @@ class Dataset():
         self.texts = self.texts[mask]
         self.text_names = self.text_names[mask]
 
-def get_dictionaries(vid2tex_filename="vid2tex.json",
-                    tex2vid_filename="tex2vid.json"):
+def get_dictionaries(vid2tex_filename="dictionaries/vid2tex.json",
+                    tex2vid_filename="dictionaries/tex2vid.json"):
     if not os.path.isfile(vid2tex_filename) or not os.path.isfile(tex2vid_filename):
         dataset_text_parser.export_descriptions()
     with open(vid2tex_filename) as f1, open(tex2vid_filename) as f2:
